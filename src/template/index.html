@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <title>露天拍賣-尋寶地圖</title>
+  <meta name="viewport" content="width=750px">
+  <!-- <meta name="viewport" content="width=device-width, initial-scale=1.0"> -->
+  <link rel="stylesheet" type="text/css" media="screen" href="styles/main.css" />
+  <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.15/lodash.core.min.js"></script>
+  <script type="text/javascript" src="https://www.ruten.com.tw/js/js.cookie-2.1.2.min.js"></script>
+  <script type="text/javascript" src="https://www.ruten.com.tw/js/jquery-1.7.1.min.js"></script>
+  <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.9.1/underscore-min.js"></script>
+  <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/three.js/107/three.js"></script>
+  <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/gsap/2.1.3/TweenMax.min.js"></script>
+  <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/vue@2.6.10/dist/vue.js"></script>
+  <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/particles.js@2.0.0/particles.min.js"></script>
+  <!-- Global site tag (gtag.js) - Google Analytics -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=UA-149131265-1"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+
+    gtag('config', 'UA-149131265-1');
+  </script>
+</head>
+<body>
+
+  <div class="page">
+    <div class="bg">
+      <div class="bg-color"></div>
+      <div>
+        <img class="bg-tower bg-tower1" src="assets/float-tower@3x.png" alt="">
+        <img class="bg-tower bg-tower2" src="assets/float-tower@3x.png" alt="">
+        <img class="bg-tower bg-tower3" src="assets/float-tower@3x.png" alt="">
+        <img class="bg-tower bg-tower4" src="assets/float-tower@3x.png" alt="">
+        <img class="bg-tower bg-tower5" src="assets/float-tower@3x.png" alt="">
+      </div>
+      <div class="container">
+        <div id="particles-js" class="particles-wrap"></div>
+        <div id="particles-ribbon" class="particles-wrap p-rubbon"></div>
+      </div>
+    </div>
+    <div id="app" v-cloak>
+      <nav class="nav">
+        <div class="container">
+          <div class="nav-content">
+            <div class="nav-lottery-wrap">
+              <i class="nav-lottery-crown"></i>
+              <p class="nav-lottery-num" v-show="userCoin">{{ userCoin }}</p>
+            </div>
+            <div class="game-skip-wrap" v-show="playerWalking">
+              <a href="javascript:void(0)" class="game-skip-text" @click.prevent="isSkip = true">Skip</a>
+            </div>
+          </div>
+        </div>
+      </nav>
+      <div class="start" v-show="stageStart">
+        <div class="container">
+          <div class="start-tower" ref="startTower"></div>
+          <div class="start-content" ref="startContent">
+            <h3 class="start-text-heading">結帳選超商或收集111張彩票，即可獲得抽獎機會</h3>
+            <p class="start-text-times" v-show="userTicket">還可以進行抽獎<span>{{ userTicket }}</span>次</p>
+            <!-- <a href="javascript:void(0)" class="start-button-play" @click.prevent="openPopup=true">測試</a> -->
+            <a href="javascript:void(0)" class="start-button-play" @click.prevent="start()">開始!!</a>
+            <div class="start-nav">
+              <a href="https://pub.ruten.com.tw/20191111/word.html?utm_source=ruten&utm_medium=display&utm_campaign=monopoly&utm_content=top#atag004" class="start-nav-link" target="_blank">抽獎規則</a>
+              <!-- <a href="javascript:" class="start-nav-link">中獎通知</a> -->
+              <a href="https://pub.ruten.com.tw/20191111/index.html?utm_source=ruten&utm_medium=display&utm_campaign=monopoly&utm_content=top" class="start-nav-link">回活動主頁</a>
+            </div>
+            <!-- <div>必中抽獎<input type="text" v-model="g"></div> -->
+          </div>
+        </div>
+      </div>
+      <!-- roll dice area -->
+      <div id="roll" class="roll" v-show="stageRoll">
+        <div class="container">
+          <div class="roll-bottom-tower"></div>
+          <div id="roll-banner" class="roll-banner" v-show="showRollBanner">
+            <p class="roll-banner-inner" @click.prevent="rollDice">
+              <span class="roll-banner-inner-text is-pc">甩骰子</span>
+              <span class="roll-banner-inner-text is-sm">搖手機甩骰子</span>
+            </p>
+          </div>
+          <transition name="fade">
+            <div class="steps" v-show="showRollResult">
+              <div class="steps-content">
+                <p class="steps-number">{{stepsNumber}}</p>
+                <p class="steps-text">steps</p>
+              </div>
+            </div>
+          </transition>
+        </div>
+        <div id="dice-wrap" class="dice-wrap"></div>
+      </div>
+      <!-- richman game area -->
+      <transition name="fade">
+        <div id="game" class="game" v-show="stageGame" ref="stageGame">
+          <div class="container">
+            <div class="game-scene">
+              <i class="game-icon-start"></i>
+              <div class="game-tower" ref="gameTower"></div>
+              <div class="steps">
+                <div class="steps-content">
+                  <p class="steps-number">{{stepsNumber}}</p>
+                  <p class="steps-text">steps</p>
+                </div>
+              </div>
+              <div class="game-map">
+                <div class="game-ru-start" v-show="showStartRu" ref="ruStart">
+                  <div class="pu-wrap">
+                    <img class="pu1" src="assets/pu@3x.png" alt="">
+                    <img class="pu2" src="assets/pu@3x-mirror.png" alt="">
+                  </div>
+                </div>
+                <div class="game-player-wrap" ref="playerWrap">
+                  <div class="game-player" v-show="showPlayer" ref="player">
+                    <div class="game-player-ya"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </transition>
+      <!-- popup area -->
+      <div class="popup" v-show="openPopup">
+        <div class="popup-bg"></div>
+        <div class="popup-inner">
+          <!-- useCoin -->
+          <div class="popup-content" v-show="isRunnable && ticketlessButCoin && unStart">
+            <div class="popup-content-hd">
+              <h4 class="popup-content-hd-title">兌換彩票</h4>
+            </div>
+            <div class="popup-content-bd">
+              <p class="popup-content-text">是否使用111張彩票兌換抽獎機會？</p>
+              <div class="btn-area">
+                <a href="javascript:void(0)" class="button button-full" @click.prevent="startUseCoin()">我要兌換</a>
+                <a href="https://pub.ruten.com.tw/20191111/index.html?utm_source=ruten&utm_medium=display&utm_campaign=monopoly&utm_content=popup" class="button button-outline">返回活動主頁</a>
+              </div>
+            </div>
+          </div>
+          <!-- noChance -->
+          <div class="popup-content" v-show="isRunnable && ticketLessAndNoCoin && unStart">
+            <div class="popup-content-hd">
+              <h4 class="popup-content-hd-title">太可惜了!</h4>
+            </div>
+            <div class="popup-content-bd">
+              <p class="popup-content-text">目前無抽獎機會唷</p>
+              <p class="popup-content-text">結帳選超商或收集111張彩票</p>
+              <p class="popup-content-text">即可再次抽獎！</p>
+            </div>
+            <div class="btn-area">
+              <a href="https://pub.ruten.com.tw/20191111/index.html" class="button button-full">我要領彩票</a>
+            </div>
+          </div>
+          <!-- noTimes -->
+          <div class="popup-content" v-show="!isRunnable && !noLogin && unStart">
+            <div class="popup-content-hd">
+              <h4 class="popup-content-hd-title">太可惜了!</h4>
+            </div>
+            <div class="popup-content-bd">
+              <p class="popup-content-text">今天的抽獎次數已達上限</p>
+              <p class="popup-content-text">明天再來唷！</p>
+            </div>
+            <div class="btn-area">
+              <a href="https://pub.ruten.com.tw/20191111/index.html?utm_source=ruten&utm_medium=display&utm_campaign=mission" class="button button-outline">前往主會場</a>
+            </div>
+          </div>
+          <!-- 得獎錯誤訊息 -->
+          <div class="popup-content" v-show="lotteryErr">
+            <div class="popup-content-hd">
+            </div>
+            <div class="popup-content-bd">
+              <p class="popup-content-text">{{lotteryErrMsg}}</p>
+            </div>
+            <div class="btn-area">
+              <a href="https://pub.ruten.com.tw/20191111/index.html?utm_source=ruten&utm_medium=display&utm_campaign=mission" class="button button-outline">前往主會場</a>
+            </div>
+          </div>
+          <!-- 時間結束 -->
+          <div class="popup-content" v-show="gameTimeEnd">
+            <div class="popup-content-hd">
+            </div>
+            <div class="popup-content-bd">
+              <p class="popup-content-text">活動時間已結束，感謝您的支持與參與!</p>
+            </div>
+            <div class="btn-area">
+              <a href="https://www.ruten.com.tw" class="button button-outline">前往露天拍賣</a>
+            </div>
+          </div>
+          <!-- 中獎 一般獎項 popup -->
+          <div class="popup-content" v-if="rewardNotCoinORCoupon && !unStart">
+            <div class="popup-content-hd">
+              <h4 class="popup-content-hd-title">恭喜中獎</h4>
+            </div>
+            <div class="popup-content-bd">
+              <div class="reward-area">
+                <p class="congratulate">恭喜獲得</p>
+                <div class="reward-box">
+                  <p class="reward-text">
+                    <i class="logo logo-711" v-if="rewardIs711"></i>
+                    <i class="logo logo-cvs" v-if="rewardIsCVS"></i>
+                    <span>{{rewardInfo.name}}</span>
+                  </p>
+                </div>
+                <div class="reward-img-box" v-if="rewardInfo.img">
+                  <img class="reward-img" :src="rewardInfo.img" alt="">
+                </div>
+                <p>※兌換方式將透過Email通知您唷！</p>
+              </div>
+              <div class="btn-area">
+                <a href="javascript:void(0)" class="button button-full" @click.prevent="reStart">再挑戰一次</a>
+              </div>
+              <div class="link-area">
+                <div class="link-col">
+                  <a href="https://pub.ruten.com.tw/20191111/index.html?utm_source=ruten&utm_medium=display&utm_campaign=monopoly&utm_content=popup" target="_blank" class="link-icon link-tower">
+                    <i class="link-icon-tower"></i>
+                  </a>
+                  <p class="link-item-text">露天狂歡城</p>
+                </div>
+                <div class="link-col">
+                  <a href="https://pub.ruten.com.tw/20191111seller/index.html?utm_source=ruten&utm_medium=display&utm_campaign=monopoly&utm_content=popup" target="_blank" class="link-icon link-magic">
+                    <i class="link-icon-magic"></i>
+                  </a>
+                  <p class="link-item-text">超激特賣</p>
+                </div>
+                <div class="link-col">
+                  <a href="https://mybid.ruten.com.tw/master/mission_overview.php?utm_source=ruten&utm_medium=display&utm_campaign=monopoly&utm_content=popup" target="_blank" class="link-icon link-mission">
+                    <i class="link-icon-mission"></i>
+                  </a>
+                  <p class="link-item-text">毎日任務</p>
+                </div>
+                <div class="link-col">
+                  <a href="https://pub.ruten.com.tw/20191111game/dragon/index.html?utm_source=ruten&utm_medium=display&utm_campaign=monopoly&utm_content=popup" target="_blank" class="link-icon link-dragon">
+                    <i class="link-icon-dragon"></i>
+                  </a>
+                  <p class="link-item-text">小露露屠龍</p>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- 彩票中獎popup -->
+          <div class="popup-content" v-if="(rewardIsCoin && !unStart)">
+            <div class="popup-content-hd">
+              <h4 class="popup-content-hd-title">恭喜中獎</h4>
+            </div>
+            <div class="popup-content-bd">
+              <div class="reward-area">
+                <p class="congratulate">恭喜獲得</p>
+                <div class="reward-box">
+                  <p class="reward-text">露天彩票<span class="red">{{ rewardInfo.coin }}</span>張</p>
+                </div>
+                <p>彩票適用時間：<br><span>11/08 11:00</span>-<span>11/14 11:00</span></p>
+                <!-- <p>彩票適用時間：<br>{{rewardInfo.couponStartTime}}-{{rewardInfo.couponEndTime}}</p> -->
+              </div>
+
+              <div class="btn-area">
+                <a href="javascript:void(0)" class="button button-full" @click.prevent="reStart">再挑戰一次</a>
+              </div>
+
+              <div class="coin-area" v-if="coinActive">
+                <div class="coin-hd">
+                  <p class="coin-hd-title">彩票適用商品</p>
+                </div>
+                <div class="coin-goods-wrap" v-if="coinSuitableGoods.length">
+                  <div class="coin-goods-item" v-for="good in coinSuitableGoods">
+                    <div class="coin-goods-avatar">
+                      <a :href="good.link" target="_blank">
+                        <img class="coin-goods-img" :src="good.images.url[0] || good.images.m_url[0]" alt="">
+                      </a>
+                    </div>
+                    <p class="coin-goods-item-name">{{good.name}}</p>
+                    <p class="coin-goods-item-price">{{good.goods_price_range.min}}</p>
+                  </div>
+                </div>
+              </div>
+
+              <div class="link-area">
+                <div class="link-col">
+                  <a href="https://pub.ruten.com.tw/20191111/index.html?utm_source=ruten&utm_medium=display&utm_campaign=monopoly&utm_content=popup" target="_blank" class="link-icon link-tower">
+                    <i class="link-icon-tower"></i>
+                  </a>
+                  <p class="link-item-text">露天狂歡城</p>
+                </div>
+                <div class="link-col">
+                  <a href="https://pub.ruten.com.tw/20191111seller/index.html?utm_source=ruten&utm_medium=display&utm_campaign=monopoly&utm_content=popup" target="_blank" class="link-icon link-magic">
+                    <i class="link-icon-magic"></i>
+                  </a>
+                  <p class="link-item-text">超激特賣</p>
+                </div>
+                <div class="link-col">
+                  <a href="https://mybid.ruten.com.tw/master/mission_overview.php?utm_source=ruten&utm_medium=display&utm_campaign=monopoly&utm_content=popup" target="_blank" class="link-icon link-mission">
+                    <i class="link-icon-mission"></i>
+                  </a>
+                  <p class="link-item-text">毎日任務</p>
+                </div>
+                <div class="link-col">
+                  <a href="https://pub.ruten.com.tw/20191111game/dragon/index.html?utm_source=ruten&utm_medium=display&utm_campaign=monopoly&utm_content=popup" target="_blank" class="link-icon link-dragon">
+                    <i class="link-icon-dragon"></i>
+                  </a>
+                  <p class="link-item-text">小露露屠龍</p>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- 折扣碼 popup -->
+          <div class="popup-content" v-if="(rewardIsCoupon && !unStart)">
+            <div class="popup-content-hd">
+              <h4 class="popup-content-hd-title">恭喜中獎</h4>
+            </div>
+            <div class="popup-content-bd">
+              <div class="reward-area">
+                <p class="congratulate">恭喜獲得
+                <div v-if="couponIsSeller">
+                  <div class="reward-box">
+                    <p class="reward-text">露天賣家商品折價券一張</p>
+                    <p class="reward-text">折扣碼：<span>{{rewardInfo.couponCode}}</span></p>
+                  </div>
+                  <p class="note"></p>
+                  <p>適用時間：<br>{{rewardInfo.couponStartTime}}-{{rewardInfo.couponEndTime}}</p>
+                </div>
+                <div v-if="couponIsRuten">
+                  <div class="reward-box">
+                    <p class="reward-text">露天商品折價券一張</p>
+                    <p class="reward-text">折扣碼：<span>{{rewardInfo.couponCode}}</span></p>
+                  </div>
+                  <p class="note"></p>
+                  <p>適用時間：<br>{{rewardInfo.couponStartTime}}-{{rewardInfo.couponEndTime}}</p>
+                </div>
+                <div v-if="couponIs711">
+                  <div class="reward-box">
+                    <p class="reward-text"><i class="logo logo-711"></i>免運券一張</p>
+                    <p class="reward-text">折扣碼：<span>{{rewardInfo.couponCode}}</span></p>
+                  </div>
+                  <p class="note"></p>
+                  <p>適用時間：<br>{{rewardInfo.couponStartTime}}-{{rewardInfo.couponEndTime}}</p>
+                </div>
+                <div v-if="couponIsCVS">
+                  <div class="reward-box">
+                    <p class="reward-text"><i class="logo logo-cvs"></i>免運券一張</p>
+                    <p class="reward-text">折扣碼：<span>{{rewardInfo.couponCode}}</span></p>
+                  </div>
+                  <p class="note"></p>
+                  <p>適用時間：{{rewardInfo.couponStartTime}}-{{rewardInfo.couponEndTime}}</p>
+                </div>
+              </div>
+              <div class="btn-area">
+                <a href="javascript:void(0)" class="button button-full" @click.prevent="reStart">再挑戰一次</a>
+              </div>
+              <div class="coupon-area" v-if="couponIsSeller && couponSeller.length">
+                <div class="coupon-hd">
+                  <p class="coupon-hd-title">折價券適用</p>
+                </div>
+                <div class="coupon-store-wrap">
+                  <!-- per store -->
+                  <div class="coupon-store-item" v-for="item in couponSeller">
+                    <div class="coupon-store-avatar">
+                      <a :href="item.storeLink" v-if="item.userImg">
+                        <img class="coupon-store-img" :src="item.userImg" :alt="item.storeName">
+                      </a>
+                      <a :href="item.storeLink" v-if="!item.userImg">
+                        <i class="coupon-store-noimg"></i>
+                      </a>
+                    </div>
+                    <div class="coupon-store-name">
+                      <p class="coupon-store-name-text">
+                        <a :href="item.storeLink">{{ item.storeName }}</a>
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="link-area" v-if="!couponIsSeller">
+                <div class="link-col">
+                  <a href="https://pub.ruten.com.tw/20191111/index.html?utm_source=ruten&utm_medium=display&utm_campaign=monopoly&utm_content=popup" target="_blank" class="link-icon link-tower">
+                    <i class="link-icon-tower"></i>
+                  </a>
+                  <p class="link-item-text">露天狂歡城</p>
+                </div>
+                <div class="link-col">
+                  <a href="https://pub.ruten.com.tw/20191111seller/index.html?utm_source=ruten&utm_medium=display&utm_campaign=monopoly&utm_content=popup" target="_blank" class="link-icon link-magic">
+                    <i class="link-icon-magic"></i>
+                  </a>
+                  <p class="link-item-text">超激特賣</p>
+                </div>
+                <div class="link-col">
+                  <a href="https://mybid.ruten.com.tw/master/mission_overview.php?utm_source=ruten&utm_medium=display&utm_campaign=monopoly&utm_content=popup" target="_blank" class="link-icon link-mission">
+                    <i class="link-icon-mission"></i>
+                  </a>
+                  <p class="link-item-text">毎日任務</p>
+                </div>
+                <div class="link-col">
+                  <a href="https://pub.ruten.com.tw/20191111game/dragon/index.html?utm_source=ruten&utm_medium=display&utm_campaign=monopoly&utm_content=popup" target="_blank" class="link-icon link-dragon">
+                    <i class="link-icon-dragon"></i>
+                  </a>
+                  <p class="link-item-text">小露露屠龍</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script>
+    (function(R,u,t,e,n,T,S){
+      t=R[t]=function(){(t.queue=t.queue||[]).push(arguments);};
+      t.host=n;T=u.createElement(e);T.async=1;T.src=n+'/ts_async.js?8';
+      S=u.getElementsByTagName(e)[0];S.parentNode.insertBefore(T,S);
+      }(window,document,'_ts_js_fn','script','https://ts.ruten.com.tw'));
+    _ts_js_fn('init'); _ts_js_fn('run');
+  </script>
+  <script src="scripts/index.js"></script>
+</body>
+</html>
